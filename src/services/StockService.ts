@@ -29,6 +29,7 @@ export interface EarningsEvent {
     actual?: number;
     surprise?: number;
   };
+  importance?: number; // Added importance field to the interface
 }
 
 export interface StockDetails {
@@ -148,18 +149,24 @@ const determineEarningsTime = (
 const transformEarningsData = (
   apiData: any[]
 ): Record<number, EarningsEvent[]> => {
+  console.log("API Data received:", apiData.length, "items");
+
+  // Debug: Log importance values in the API data
+  const importanceValues = apiData
+    .map((item) => item.importance)
+    .filter(Boolean);
+  console.log(
+    "Importance values in API data:",
+    [...new Set(importanceValues)].sort()
+  );
+
   const result: Record<number, EarningsEvent[]> = {};
+
+  // First, transform all data to EarningsEvent format for easier processing
+  const transformedEvents: EarningsEvent[] = [];
 
   apiData.forEach((item) => {
     if (!item.earningsDate) return;
-
-    // Extract day from the date
-    const day = parseInt(item.earningsDate.split("-")[2]);
-
-    // Initialize array for this day if it doesn't exist
-    if (!result[day]) {
-      result[day] = [];
-    }
 
     // Transform API item to EarningsEvent format
     const earningsEvent: EarningsEvent = {
@@ -172,9 +179,54 @@ const transformEarningsData = (
         actual: item.epsActual,
         surprise: item.epsSurprise,
       },
+      importance: item.importance, // Include importance in the transformed data
     };
 
-    result[day].push(earningsEvent);
+    transformedEvents.push(earningsEvent);
+  });
+
+  console.log("Transformed events:", transformedEvents.length);
+
+  // Check if any stock has importance >= 4
+  const hasHighImportance = transformedEvents.some(
+    (item) => item.importance !== undefined && item.importance >= 4
+  );
+
+  console.log("Has high importance (>=4):", hasHighImportance);
+
+  // Filter events based on importance criteria
+  let filteredEvents;
+  if (hasHighImportance) {
+    // If any stock has importance >= 4, show all stocks
+    filteredEvents = transformedEvents;
+    console.log("Showing all stocks due to high importance presence");
+  } else {
+    // Otherwise, only show stocks with importance = 3
+    filteredEvents = transformedEvents.filter(
+      (item) => item.importance !== undefined && item.importance === 3
+    );
+    console.log(
+      "Filtered to importance = 3 only:",
+      filteredEvents.length,
+      "stocks"
+    );
+  }
+
+  // Organize filtered events by day
+  filteredEvents.forEach((event) => {
+    const day = parseInt(event.date.split("-")[2]);
+
+    // Initialize array for this day if it doesn't exist
+    if (!result[day]) {
+      result[day] = [];
+    }
+
+    result[day].push(event);
+  });
+
+  // Debug: Log the final result structure
+  Object.keys(result).forEach((day) => {
+    console.log(`Day ${day}: ${result[parseInt(day)].length} events`);
   });
 
   return result;
@@ -307,15 +359,20 @@ export const StockService = {
     week: string
   ): Promise<Record<number, EarningsEvent[]>> => {
     try {
+      console.log("Fetching earnings calendar for week:", week);
+
       // Parse week string to get start and end dates
       const { startDate, endDate } = parseWeekString(week);
+      console.log("Date range:", startDate, "to", endDate);
 
       // Make API call to SavvyTrader
       const response = await axios.get(
         `https://api.savvytrader.com/pricing/assets/earnings/calendar?start=${startDate}&end=${endDate}`
       );
 
-      // Transform API response to expected format
+      console.log("API response received with", response.data.length, "items");
+
+      // Transform API response to expected format with importance filtering
       const transformedData = transformEarningsData(response.data);
 
       // Ensure all days in the range have entries (even if empty)
@@ -335,101 +392,112 @@ export const StockService = {
 
       // Fallback to mock data in case of API failure
       console.warn("Falling back to mock earnings data");
-      return {
-        24: [
-          {
-            symbol: "LUNR",
-            name: "Lunar Industries",
-            date: "2025-03-24",
-            time: "before",
-            eps: { estimate: 0.45 },
-          },
-          {
-            symbol: "OKLO",
-            name: "Oklo Power",
-            date: "2025-03-24",
-            time: "after",
-            eps: { estimate: -0.12 },
-          },
-        ],
-        25: [
-          {
-            symbol: "RUM",
-            name: "Rumble Inc.",
-            date: "2025-03-25",
-            time: "before",
-            eps: { estimate: 0.32 },
-          },
-          {
-            symbol: "GME",
-            name: "GameStop Corp.",
-            date: "2025-03-25",
-            time: "after",
-            eps: { estimate: 0.18 },
-          },
-        ],
-        26: [
-          {
-            symbol: "CHWY",
-            name: "Chewy Inc.",
-            date: "2025-03-26",
-            time: "before",
-            eps: { estimate: 0.15 },
-          },
-          {
-            symbol: "CTAS",
-            name: "Cintas Corporation",
-            date: "2025-03-26",
-            time: "before",
-            eps: { estimate: 3.78 },
-          },
-          {
-            symbol: "DLTR",
-            name: "Dollar Tree Inc.",
-            date: "2025-03-26",
-            time: "before",
-            eps: { estimate: 2.65 },
-          },
-          {
-            symbol: "PAYX",
-            name: "Paychex Inc.",
-            date: "2025-03-26",
-            time: "before",
-            eps: { estimate: 1.12 },
-          },
-          {
-            symbol: "JEF",
-            name: "Jefferies Financial Group",
-            date: "2025-03-26",
-            time: "after",
-            eps: { estimate: 0.76 },
-          },
-        ],
-        27: [
-          {
-            symbol: "BITF",
-            name: "Bitfarms Ltd.",
-            date: "2025-03-27",
-            time: "before",
-            eps: { estimate: -0.03 },
-          },
-          {
-            symbol: "LULU",
-            name: "Lululemon Athletica",
-            date: "2025-03-27",
-            time: "after",
-            eps: { estimate: 5.42 },
-          },
-          {
-            symbol: "KULR",
-            name: "KULR Technology Group",
-            date: "2025-03-27",
-            time: "after",
-            eps: { estimate: -0.04 },
-          },
-        ],
-        28: [],
-      };
+
+      // Create raw mock data with importance values
+      const rawMockData = [
+        {
+          symbol: "LUNR",
+          assetName: "Lunar Industries",
+          earningsDate: "2025-03-24",
+          earningsTime: "08:30",
+          epsEstimate: 0.45,
+          importance: 3,
+        },
+        {
+          symbol: "OKLO",
+          assetName: "Oklo Power",
+          earningsDate: "2025-03-24",
+          earningsTime: "16:30",
+          epsEstimate: -0.12,
+          importance: 2,
+        },
+        {
+          symbol: "RUM",
+          assetName: "Rumble Inc.",
+          earningsDate: "2025-03-25",
+          earningsTime: "08:30",
+          epsEstimate: 0.32,
+          importance: 3,
+        },
+        {
+          symbol: "GME",
+          assetName: "GameStop Corp.",
+          earningsDate: "2025-03-25",
+          earningsTime: "16:30",
+          epsEstimate: 0.18,
+          importance: 2,
+        },
+        {
+          symbol: "CHWY",
+          assetName: "Chewy Inc.",
+          earningsDate: "2025-03-26",
+          earningsTime: "08:30",
+          epsEstimate: 0.15,
+          importance: 3,
+        },
+        {
+          symbol: "CTAS",
+          assetName: "Cintas Corporation",
+          earningsDate: "2025-03-26",
+          earningsTime: "08:30",
+          epsEstimate: 3.78,
+          importance: 3,
+        },
+        {
+          symbol: "DLTR",
+          assetName: "Dollar Tree Inc.",
+          earningsDate: "2025-03-26",
+          earningsTime: "08:30",
+          epsEstimate: 2.65,
+          importance: 2,
+        },
+        {
+          symbol: "PAYX",
+          assetName: "Paychex Inc.",
+          earningsDate: "2025-03-26",
+          earningsTime: "08:30",
+          epsEstimate: 1.12,
+          importance: 2,
+        },
+        {
+          symbol: "JEF",
+          assetName: "Jefferies Financial Group",
+          earningsDate: "2025-03-26",
+          earningsTime: "16:30",
+          epsEstimate: 0.76,
+          importance: 1,
+        },
+        {
+          symbol: "BITF",
+          assetName: "Bitfarms Ltd.",
+          earningsDate: "2025-03-27",
+          earningsTime: "08:30",
+          epsEstimate: -0.03,
+          importance: 2,
+        },
+        {
+          symbol: "LULU",
+          assetName: "Lululemon Athletica",
+          earningsDate: "2025-03-27",
+          earningsTime: "16:30",
+          epsEstimate: 5.42,
+          importance: 3,
+        },
+        {
+          symbol: "KULR",
+          assetName: "KULR Technology Group",
+          earningsDate: "2025-03-27",
+          earningsTime: "16:30",
+          epsEstimate: -0.04,
+          importance: 1,
+        },
+      ];
+
+      console.log("Using mock data with", rawMockData.length, "items");
+
+      // Use the same transformEarningsData function to process mock data
+      // This ensures consistent filtering logic for both API and mock data
+      return transformEarningsData(rawMockData);
     }
   },
 
@@ -467,105 +535,44 @@ export const StockService = {
     }
   },
 
-  // Get detailed stock information
+  // Get stock details
   getStockDetails: async (symbol: string): Promise<StockDetails> => {
     try {
       // In a real app, this would be an API call
-      // const response = await axios.get(`${API_URL}/stocks/${symbol}/details`);
+      // const response = await axios.get(`${API_URL}/stocks/${symbol}`);
       // return response.data;
 
-      // Mock data based on the symbol
-      const stockDetailsMap: Record<string, StockDetails> = {
-        AAPL: {
-          symbol: "AAPL",
-          name: "Apple Inc.",
-          price: 175.34,
-          change: 2.45,
-          changePercent: 1.42,
-          volume: "32.5M",
-          marketStatus: "open",
-          lastUpdated: "Mar 24, 2025, 10:30 AM ET",
-          marketCap: "$2.78T",
-          peRatio: 28.45,
-          eps: 6.16,
-          beta: 1.28,
-          dividendYield: "0.52%",
-          averageVolume: "58.7M",
-          high52Week: 198.23,
-          low52Week: 143.9,
-          industry: "Consumer Electronics",
-          sector: "Technology",
-          description:
-            "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide. The company offers iPhone, a line of smartphones; Mac, a line of personal computers; iPad, a line of multi-purpose tablets; and wearables, home, and accessories comprising AirPods, Apple TV, Apple Watch, Beats products, and HomePod.",
-          ceo: "Tim Cook",
-          founded: "April 1, 1976",
-          headquarters: "Cupertino, California, United States",
-          employees: "164,000",
-          website: "https://www.apple.com",
-        },
-        MSFT: {
-          symbol: "MSFT",
-          name: "Microsoft Corporation",
-          price: 425.22,
-          change: 5.67,
-          changePercent: 1.35,
-          volume: "28.1M",
-          marketStatus: "open",
-          lastUpdated: "Mar 24, 2025, 10:30 AM ET",
-          marketCap: "$3.16T",
-          peRatio: 36.82,
-          eps: 11.55,
-          beta: 0.92,
-          dividendYield: "0.73%",
-          averageVolume: "26.4M",
-          high52Week: 430.82,
-          low52Week: 309.98,
-          industry: "Software—Infrastructure",
-          sector: "Technology",
-          description:
-            "Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide. The company operates in three segments: Productivity and Business Processes, Intelligent Cloud, and More Personal Computing.",
-          ceo: "Satya Nadella",
-          founded: "April 4, 1975",
-          headquarters: "Redmond, Washington, United States",
-          employees: "221,000",
-          website: "https://www.microsoft.com",
-        },
+      // Mock data for now
+      return {
+        symbol,
+        name: `${symbol} Inc.`,
+        price: 175.34,
+        change: 2.45,
+        changePercent: 1.42,
+        volume: "32.5M",
+        marketStatus: "open",
+        lastUpdated: new Date().toISOString(),
+        marketCap: "2.85T",
+        peRatio: 28.5,
+        eps: 6.15,
+        beta: 1.2,
+        dividendYield: "0.5%",
+        averageVolume: "28.7M",
+        high52Week: 198.23,
+        low52Week: 142.19,
+        industry: "Technology",
+        sector: "Consumer Electronics",
+        description:
+          "This is a leading technology company that designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories.",
+        ceo: "John Doe",
+        founded: "1976",
+        headquarters: "Cupertino, CA",
+        employees: "154,000",
+        website: `https://www.${symbol.toLowerCase()}.com`,
       };
-
-      // Return the stock details if found, otherwise return a default
-      return (
-        stockDetailsMap[symbol] || {
-          symbol,
-          name: `${symbol} Inc.`,
-          price: 100.0,
-          change: 0,
-          changePercent: 0,
-          volume: "N/A",
-          marketStatus: "closed",
-          lastUpdated: "N/A",
-          marketCap: "N/A",
-          peRatio: 0,
-          eps: 0,
-          beta: 1,
-          dividendYield: "N/A",
-          averageVolume: "N/A",
-          high52Week: 0,
-          low52Week: 0,
-          industry: "N/A",
-          sector: "N/A",
-          description: "No description available.",
-          ceo: "N/A",
-          founded: "N/A",
-          headquarters: "N/A",
-          employees: "N/A",
-          website: "N/A",
-        }
-      );
     } catch (error) {
-      console.error("Error fetching stock details:", error);
+      console.error(`Error fetching details for ${symbol}:`, error);
       throw error;
     }
   },
 };
-
-export default StockService;

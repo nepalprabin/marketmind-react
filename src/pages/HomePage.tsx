@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import MarketOverview from '../components/MarketOverview';
 import TrendingStocks from '../components/TrendingStocks';
-import StockService, { MarketIndex, Stock } from '../services/StockService';
+import { StockService, MarketIndex, Stock } from '../services/StockService';
 
 const HomePage: React.FC = () => {
   const [marketData, setMarketData] = useState<MarketIndex[]>([]);
