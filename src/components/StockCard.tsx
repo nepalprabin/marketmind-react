@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaArrowUp, FaArrowDown } from 'react-icons/fa';
 
 interface StockCardProps {
@@ -18,10 +19,18 @@ const StockCard: React.FC<StockCardProps> = ({
   changePercent,
   volume
 }) => {
+  const navigate = useNavigate();
   const isPositive = change >= 0;
   
+  const handleClick = () => {
+    navigate(`/stock/${symbol}`);
+  };
+  
   return (
-    <div className="card hover:shadow-lg transition-shadow cursor-pointer">
+    <div 
+      className="card hover:shadow-lg transition-shadow cursor-pointer"
+      onClick={handleClick}
+    >
       <div className="flex justify-between items-start">
         <div>
           <h3 className="text-lg font-bold">{symbol}</h3>
