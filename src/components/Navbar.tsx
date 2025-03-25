@@ -23,7 +23,7 @@ const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <FaChartLine className="text-primary text-2xl" />
-            <span className="text-xl font-bold">StockTrader</span>
+            <span className="text-xl font-bold">MarketMind</span>
           </Link>
 
           {/* Desktop Navigation */}
