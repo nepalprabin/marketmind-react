@@ -8,6 +8,7 @@ import FundamentalTabs from '../components/FundamentalTabs';
 import EarningsChart from '../components/EarningsChart';
 import CompanyInfo from '../components/CompanyInfo';
 import { StockService } from '../services/StockService';
+import Navbar from '../components/Navbar';
 
 const StockDetailPage: React.FC = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -72,6 +73,8 @@ const StockDetailPage: React.FC = () => {
   }
   
   return (
+    <div className="min-h-screen bg-light">
+      <Navbar />
     <div className="container mx-auto px-4 py-8">
       <StockHeader 
         symbol={stockData.symbol}
@@ -112,6 +115,7 @@ const StockDetailPage: React.FC = () => {
         employees={stockData.employees}
         website={stockData.website}
       />
+    </div>
     </div>
   );
 };

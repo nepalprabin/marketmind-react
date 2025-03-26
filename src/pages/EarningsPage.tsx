@@ -1,23 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaCalendarAlt, FaChevronLeft, FaChevronRight, FaListUl, FaCalendarWeek, FaCalendarDay, FaStar } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import StockLogo from '../components/StockLogo';
 import { StockService, EarningsEvent } from '../services/StockService';
 
 const EarningsPage: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'list' | 'week' | 'month'>('week');
-  const [currentWeek, setCurrentWeek] = useState<string>('MAR 24 - 28');
-  const [earningsData, setEarningsData] = useState<Record<number, EarningsEvent[]>>({});
-  const [earningsFeed, setEarningsFeed] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filterActive, setFilterActive] = useState<boolean>(false);
+  const navigate = useNavigate(); // Hook for navigation
+  const [viewMode, setViewMode] = React.useState<'list' | 'week' | 'month'>('week');
+  const [currentWeek, setCurrentWeek] = React.useState<string>('MAR 24 - 28');
+  const [earningsData, setEarningsData] = React.useState<Record<number, EarningsEvent[]>>({});
+  const [earningsFeed, setEarningsFeed] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [filterActive, setFilterActive] = React.useState<boolean>(false);
   
   // Mock data for week days and dates
   const weekDays = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
   const dates = [24, 25, 26, 27, 28];
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -68,6 +70,27 @@ const EarningsPage: React.FC = () => {
       </div>
     );
   };
+
+  // Function to navigate to stock details page
+  const navigateToStockDetails = (symbol: string) => {
+    navigate(`/stock/${symbol}`);
+  };
+
+  // Render a clickable stock card
+  const renderStockCard = (earning: EarningsEvent) => (
+    <div 
+      key={earning.symbol} 
+      className="bg-white p-3 rounded shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+      onClick={() => navigateToStockDetails(earning.symbol)}
+    >
+      <div className="flex items-center mb-1">
+        <StockLogo symbol={earning.symbol} size="md" />
+        <div className="font-bold ml-2">{earning.symbol}</div>
+        {renderImportanceIndicator(earning.importance)}
+      </div>
+      <div className="text-xs text-gray-500 truncate">{earning.name}</div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-light">
@@ -169,16 +192,7 @@ const EarningsPage: React.FC = () => {
                     <div className="grid grid-cols-1 gap-2">
                       {earningsData[dates[index]]
                         .filter(e => e.time === 'before')
-                        .map(earning => (
-                          <div key={earning.symbol} className="bg-white p-3 rounded shadow-sm">
-                            <div className="flex items-center mb-1">
-                              <StockLogo symbol={earning.symbol} size="md" />
-                              <div className="font-bold ml-2">{earning.symbol}</div>
-                              {renderImportanceIndicator(earning.importance)}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate">{earning.name}</div>
-                          </div>
-                        ))}
+                        .map(earning => renderStockCard(earning))}
                     </div>
                   </div>
                 )}
@@ -193,16 +207,7 @@ const EarningsPage: React.FC = () => {
                     <div className="grid grid-cols-1 gap-2">
                       {earningsData[dates[index]]
                         .filter(e => e.time === 'after')
-                        .map(earning => (
-                          <div key={earning.symbol} className="bg-white p-3 rounded shadow-sm">
-                            <div className="flex items-center mb-1">
-                              <StockLogo symbol={earning.symbol} size="md" />
-                              <div className="font-bold ml-2">{earning.symbol}</div>
-                              {renderImportanceIndicator(earning.importance)}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate">{earning.name}</div>
-                          </div>
-                        ))}
+                        .map(earning => renderStockCard(earning))}
                     </div>
                   </div>
                 )}
@@ -249,7 +254,11 @@ const EarningsPage: React.FC = () => {
           ) : (
             <div className="space-y-6">
               {earningsFeed.map((item, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div 
+                  key={index} 
+                  className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => navigateToStockDetails(item.symbol)}
+                >
                   <div className="flex items-center mb-3">
                     <StockLogo symbol={item.symbol} size="lg" />
                     <div className="ml-3">

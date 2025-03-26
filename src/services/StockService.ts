@@ -1,5 +1,7 @@
 // Base API URL would be used in a real app
 import axios from "axios";
+import yahooFinanceService from "./YahooFinanceDataService";
+
 // const API_URL = 'https://api.example.com';
 
 // Types
@@ -58,6 +60,14 @@ export interface StockDetails {
   employees: string;
   website: string;
 }
+
+// Market index symbols and their display names
+const MARKET_INDICES = [
+  { symbol: "^GSPC", name: "S&P 500" },
+  { symbol: "^IXIC", name: "NASDAQ" },
+  { symbol: "^DJI", name: "DOW" },
+  { symbol: "BTC-USD", name: "BTC/USD" },
+];
 
 // Helper function to parse week string (e.g., "MAR 24 - 28")
 const parseWeekString = (
@@ -317,11 +327,61 @@ export const StockService = {
   // Get market indices
   getMarketIndices: async (): Promise<MarketIndex[]> => {
     try {
-      // In a real app, this would be an API call
-      // const response = await axios.get(`${API_URL}/markets/indices`);
-      // return response.data;
+      // Fetch real-time data for each market index
+      const marketIndicesPromises = MARKET_INDICES.map(async (index) => {
+        try {
+          const data = await yahooFinanceService.getStockChart(
+            index.symbol,
+            "1d",
+            "1d"
+          );
 
-      // Mock data for now
+          // Extract the latest data point
+          const result = data.chart.result[0];
+          const meta = result.meta;
+          const quotes = result.indicators.quote[0];
+          const timestamps = result.timestamp;
+
+          // Get the latest price
+          const latestIndex = timestamps.length - 1;
+          const currentPrice = quotes.close[latestIndex];
+          const previousClose = meta.chartPreviousClose;
+
+          // Calculate change and change percent
+          const change = currentPrice - previousClose;
+          const changePercent = (change / previousClose) * 100;
+
+          // Format the value based on the index
+          const formattedValue = yahooFinanceService.formatPrice(
+            index.symbol,
+            currentPrice
+          );
+
+          return {
+            name: index.name,
+            value: formattedValue,
+            change: change,
+            changePercent: changePercent,
+          };
+        } catch (error) {
+          console.error(`Error fetching data for ${index.symbol}:`, error);
+          // Fallback to mock data if API call fails
+          return {
+            name: index.name,
+            value: index.symbol === "BTC-USD" ? "$65,821.52" : "0.00",
+            change: 0,
+            changePercent: 0,
+          };
+        }
+      });
+
+      // Wait for all API calls to complete
+      const marketIndices = await Promise.all(marketIndicesPromises);
+      return marketIndices;
+    } catch (error) {
+      console.error("Error fetching market indices:", error);
+
+      // Fallback to mock data if API calls fail
       return [
         {
           name: "S&P 500",
@@ -348,12 +408,8 @@ export const StockService = {
           changePercent: -1.65,
         },
       ];
-    } catch (error) {
-      console.error("Error fetching market indices:", error);
-      throw error;
     }
   },
-
   // Get earnings calendar for a specific week
   getEarningsCalendar: async (
     week: string

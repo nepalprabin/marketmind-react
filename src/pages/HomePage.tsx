@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import MarketOverview from '../components/MarketOverview';
 import TrendingStocks from '../components/TrendingStocks';
 import { StockService, MarketIndex, Stock } from '../services/StockService';
+import MarketIndicesProxy from '../components/MarketIndicesProxy';
 
 const HomePage: React.FC = () => {
   const [marketData, setMarketData] = useState<MarketIndex[]>([]);
@@ -16,14 +17,11 @@ const HomePage: React.FC = () => {
       try {
         setLoading(true);
         
-        // Fetch market indices
-        const marketIndices = await StockService.getMarketIndices();
-        setMarketData(marketIndices);
-        
         // Fetch trending stocks
         const stocks = await StockService.getTrendingStocks();
         setTrendingStocks(stocks);
         
+        // Market indices will be fetched by MarketIndicesProxy component
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -34,6 +32,27 @@ const HomePage: React.FC = () => {
 
     fetchData();
   }, []);
+
+  // Handler for when market indices are loaded from the proxy
+  const handleMarketIndicesLoaded = (data: any) => {
+    // Transform the data to match the MarketIndex interface
+    const indices: MarketIndex[] = Object.keys(data).map(key => {
+      const item = data[key];
+      return {
+        name: item.name,
+        value: item.price.toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).replace('$', ''),
+        change: item.change,
+        changePercent: item.changePercent
+      };
+    });
+    
+    setMarketData(indices);
+  };
 
   return (
     <div className="min-h-screen bg-light">
@@ -55,6 +74,11 @@ const HomePage: React.FC = () => {
         </div>
       ) : (
         <>
+          {/* This component is hidden but fetches data through the proxy */}
+          <div className="hidden">
+            <MarketIndicesProxy onDataLoaded={handleMarketIndicesLoaded} />
+          </div>
+          
           <MarketOverview markets={marketData} />
           <TrendingStocks stocks={trendingStocks} />
         </>
@@ -108,7 +132,7 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-xl font-bold mb-4">StockTrader</h3>
+              <h3 className="text-xl font-bold mb-4">MarketMind</h3>
               <p className="text-gray-400">
                 Your all-in-one platform for stock trading, market analysis, and earnings tracking.
               </p>

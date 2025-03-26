@@ -1,15 +1,30 @@
-import React, { useState } from 'react';
+import React from 'react';
+import YahooFinanceChart from './YahooFinanceChart';
 
 interface PriceChartProps {
   symbol: string;
 }
 
 const PriceChart: React.FC<PriceChartProps> = ({ symbol }) => {
-  const [timeframe, setTimeframe] = useState<string>('1M');
-  const [showIndicators, setShowIndicators] = useState<boolean>(false);
+  const [timeframe, setTimeframe] = React.useState<string>('1M');
+  const [showIndicators, setShowIndicators] = React.useState<boolean>(false);
   
   const timeframes = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y'];
   
+  // Map timeframe to Yahoo Finance range parameter
+  const getRange = () => {
+    switch(timeframe) {
+      case '1D': return '1d';
+      case '1W': return '5d';
+      case '1M': return '1mo';
+      case '3M': return '3mo';
+      case '6M': return '6mo';
+      case '1Y': return '1y';
+      case '5Y': return '5y';
+      default: return '1mo';
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mt-6">
       <div className="flex justify-between items-center mb-4">
@@ -40,17 +55,12 @@ const PriceChart: React.FC<PriceChartProps> = ({ symbol }) => {
         </div>
       </div>
       
-      {/* Placeholder for actual chart */}
-      <div className="bg-gray-100 rounded-lg h-80 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 mb-2">Chart for {symbol} - {timeframe} timeframe</p>
-          <p className="text-gray-400 text-sm">{showIndicators ? 'With technical indicators' : 'Without technical indicators'}</p>
-          <div className="mt-4 text-sm text-gray-500">
-            <p>In a real implementation, this would be an interactive chart</p>
-            <p>using a library like Chart.js, Recharts, or a financial charting library</p>
-          </div>
-        </div>
-      </div>
+      {/* Use the YahooFinanceChart component to fetch and display chart data */}
+      <YahooFinanceChart 
+        symbol={symbol} 
+        interval="1d" 
+        range={getRange()} 
+      />
       
       <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
