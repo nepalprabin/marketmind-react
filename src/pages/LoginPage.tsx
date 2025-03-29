@@ -69,7 +69,7 @@ const LoginPage: React.FC = () => {
             )}
             
             <p className="text-gray-600 text-center mb-8">
-              Sign in with your Google account to access your StockTrader dashboard and personalized features.
+              Sign in with your Google account to access your MarketMind dashboard and personalized features.
             </p>
             
             <button
