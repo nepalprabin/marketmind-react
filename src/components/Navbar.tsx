@@ -8,7 +8,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
-  const { user, isAuthenticated, login, logout, refreshAuthState } = useAuth();
+  const { user, isAuthenticated, logout, refreshAuthState } = useAuth();
   
   useEffect(() => {
     // Refresh auth state when component mounts

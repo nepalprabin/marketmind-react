@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import axios from "axios";
 
@@ -8,6 +9,7 @@ interface Watchlist { id: string; name: string; description?: string; stocks: St
 
 const WatchlistPage: React.FC = () => {
   // State
+  const navigate = useNavigate();
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [activeWatchlist, setActiveWatchlist] = useState<Watchlist | null>(null);
   const [isCreating, setIsCreating] = useState(false);
