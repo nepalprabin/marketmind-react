@@ -5,6 +5,7 @@ import EarningsPage from './pages/EarningsPage';
 import StockDetailPage from './pages/StockDetailPage';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider } from './contexts/AuthContext';
+import WatchlistPage from './pages/WatchlistPage';
 
 const App: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ const App: React.FC = () => {
           <Route path="/earnings" element={<EarningsPage />} />
           <Route path="/stock/:symbol" element={<StockDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/watchlist" element={<WatchlistPage/>} />
           <Route path="/auth/success" element={<LoginPage />} />
           <Route path="*" element={<HomePage />} />
         </Routes>

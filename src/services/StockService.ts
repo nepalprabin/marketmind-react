@@ -2,7 +2,7 @@
 import axios from "axios";
 import yahooFinanceService from "./YahooFinanceDataService";
 
-// const API_URL = 'https://api.example.com';
+const API_URL = "http://localhost:3000";
 
 // Types
 export interface Stock {
@@ -592,43 +592,93 @@ export const StockService = {
   },
 
   // Get stock details
-  getStockDetails: async (symbol: string): Promise<StockDetails> => {
-    try {
-      // In a real app, this would be an API call
-      // const response = await axios.get(`${API_URL}/stocks/${symbol}`);
-      // return response.data;
 
-      // Mock data for now
-      return {
-        symbol,
-        name: `${symbol} Inc.`,
-        price: 175.34,
-        change: 2.45,
-        changePercent: 1.42,
-        volume: "32.5M",
-        marketStatus: "open",
-        lastUpdated: new Date().toISOString(),
-        marketCap: "2.85T",
-        peRatio: 28.5,
-        eps: 6.15,
-        beta: 1.2,
-        dividendYield: "0.5%",
-        averageVolume: "28.7M",
-        high52Week: 198.23,
-        low52Week: 142.19,
-        industry: "Technology",
-        sector: "Consumer Electronics",
-        description:
-          "This is a leading technology company that designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories.",
-        ceo: "John Doe",
-        founded: "1976",
-        headquarters: "Cupertino, CA",
-        employees: "154,000",
-        website: `https://www.${symbol.toLowerCase()}.com`,
-      };
-    } catch (error) {
-      console.error(`Error fetching details for ${symbol}:`, error);
-      throw error;
-    }
+  async getStockDetails(symbol: string): Promise<StockDetails> {
+    const resp = await axios.get(`${API_URL}/api/stocks/${symbol}`);
+    const r = resp.data as any;
+
+    // shorthand for raw vs fmt fields
+    const p = r.price;
+    const sd = r.summaryDetail;
+    const ks = r.defaultKeyStatistics;
+    const fd = r.financialData;
+    const prof = r.summaryProfile;
+    const earnHist = r.earningsHistory;
+
+    return {
+      symbol: p.symbol,
+      name: p.longName || p.shortName,
+      price: p.regularMarketPrice.raw,
+      change: p.regularMarketChange.raw,
+      changePercent: p.regularMarketChangePercent.raw,
+      volume: p.regularMarketVolume.raw,
+      marketStatus: p.marketState,
+      lastUpdated: new Date(p.regularMarketTime * 1000).toISOString(),
+
+      marketCap: p.marketCap.fmt,
+      peRatio: sd.trailingPE?.raw ?? NaN,
+      eps: ks.trailingEps?.raw ?? NaN,
+      beta: sd.beta?.raw ?? NaN,
+      dividendYield: sd.dividendYield?.raw
+        ? `${(sd.dividendYield.raw * 100).toFixed(2)}%`
+        : "N/A",
+      averageVolume: sd.averageVolume.raw,
+      high52Week: sd.fiftyTwoWeekHigh.raw,
+      low52Week: sd.fiftyTwoWeekLow.raw,
+
+      industry: prof.industry,
+      sector: prof.sector,
+      description: prof.longBusinessSummary,
+      ceo: prof.companyOfficers?.[0]?.name ?? "N/A",
+      founded: prof.founded ?? "N/A",
+      headquarters: [prof.city, prof.state, prof.country]
+        .filter(Boolean)
+        .join(", "),
+      employees: sd.fullTimeEmployees ?? NaN,
+      website: prof.website,
+
+      // you can also expose earningsHistory for your EarningsChart:
+      // earnings: earnHist.history.map((e:any) => ({ date: e.date, epsActual: e.epsActual.raw }))
+    };
+    // }
+    // getStockDetails: async (symbol: string): Promise<StockDetails> => {
+    //   try {
+    //     // In a real app, this would be an API call
+    //     // const response = await axios.get(`${API_URL}/stocks/${symbol}`);
+    //     // return response.data;
+
+    //     // Mock data for now
+    //     return {
+    //       symbol,
+    //       name: `${symbol} Inc.`,
+    //       price: 175.34,
+    //       change: 2.45,
+    //       changePercent: 1.42,
+    //       volume: "32.5M",
+    //       marketStatus: "open",
+    //       lastUpdated: new Date().toISOString(),
+    //       marketCap: "2.85T",
+    //       peRatio: 28.5,
+    //       eps: 6.15,
+    //       beta: 1.2,
+    //       dividendYield: "0.5%",
+    //       averageVolume: "28.7M",
+    //       high52Week: 198.23,
+    //       low52Week: 142.19,
+    //       industry: "Technology",
+    //       sector: "Consumer Electronics",
+    //       description:
+    //         "This is a leading technology company that designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories.",
+    //       ceo: "John Doe",
+    //       founded: "1976",
+    //       headquarters: "Cupertino, CA",
+    //       employees: "154,000",
+    //       website: `https://www.${symbol.toLowerCase()}.com`,
+    //     };
+    //   } catch (error) {
+    //     console.error(`Error fetching details for ${symbol}:`, error);
+    //     throw error;
+    //   }
+    // },
   },
 };
